@@ -46,4 +46,4 @@ jobs:
         run: |
           echo "$DEPLOY_SSH_KEY" > deploy_key
           chmod 600 deploy_key
-          ssh -i deploy_key -o StrictHostKeyChecking=no user@your-server-ip "cd /var/www/your-app && git pull origin main && composer install --no-dev && php artisan migrate --force && php artisan optimize"
+          ssh -i deploy_key -o StrictHostKeyChecking=no root@165.22.100.59 "cd /var/www/roomable-server && git pull origin main && composer install --no-dev && php artisan migrate --force && php artisan optimize"
