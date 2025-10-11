@@ -1,0 +1,49 @@
+name: Laravel CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mbstring, xml, ctype, json, tokenizer, pdo_mysql
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Copy .env file
+        run: cp .env.example .env
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      - name: Run tests
+        run: php artisan test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to server
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          echo "$DEPLOY_SSH_KEY" > deploy_key
+          chmod 600 deploy_key
+          ssh -i deploy_key -o StrictHostKeyChecking=no user@your-server-ip "cd /var/www/your-app && git pull origin main && composer install --no-dev && php artisan migrate --force && php artisan optimize"
