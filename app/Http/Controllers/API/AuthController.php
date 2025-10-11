@@ -5,44 +5,79 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponser;
 use App\Models\User;
-use Illuminate\Http\JsonResponse;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
-  public function register(Request $request)
+    public function register(Request $request): ApiResponser
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email:rfc,dns|unique:users,email',
+                'password' => 'required|string|min:8',
+            ]);
+
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+            ]);
+
+            $user->profile()->create([
+                'phone' => null,
+                'address' => null,
+            ]);
+            $user->assignRole('landlord');
+            $token = $user->createToken('auth_token')->accessToken;
+
+            return ApiResponser::ok([
+                'user' => $user->load('profile'),
+                'token' => $token,
+            ]);;
+        } catch (Exception $e) {
+            return ApiResponser::error($e);
+        }
+    }
+    public function login(Request $request)
+    {
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
         ]);
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-        ]);
+        $user = User::where('email', $credentials['email'])->first();
+
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+            return ApiResponser::error('Invalid credentials', 401);
+        }
 
         $token = $user->createToken('auth_token')->accessToken;
 
-        return ApiResponser::ok(['token' => $token]);
+        return ApiResponser::ok([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'roles' => $user->getRoleNames()->first(),
+                'profile' => $user->profile,
+            ],
+            'token' => $token,
+        ]);
     }
 
-    // public function login(Request $request)
-    // {
-    //     $credentials = $request->validate([
-    //         'email' => 'required|email',
-    //         'password' => 'required',
-    //     ]);
+    public function me(Request $request)
+    {
+        try {
+            $user = $request->user();
 
-    //     if (auth()->attempt($credentials)) {
-    //         $token = auth()->user()->createToken('auth_token')->accessToken;
-    //         return response()->json(['token' => $token], 200);
-    //     }
+            $user->load('profile');
 
-    //     return response()->json(['error' => 'Unauthorized'], 401);
-    // }
+            return ApiResponser::ok(['curr_user' => $user]);
+        } catch (Exception $e) {
+            return ApiResponser::error($e);
+        }
+    }
 }
