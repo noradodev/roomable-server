@@ -89,9 +89,9 @@
                                 </span>
                             </span>
                             <span>
-                                Watch video tutorials at
+                                This is me oon cloud
                                 <a href="https://laracasts.com" target="_blank" class="inline-flex items-center space-x-1 font-medium underline underline-offset-4 text-[#f53003] dark:text-[#FF4433] ml-1">
-                                    <span>Laracasts</span>
+                                    <span>LMy </span>
                                     <svg
                                         width="10"
                                         height="11"
@@ -273,5 +273,5 @@
         @if (Route::has('login'))
             <div class="h-14.5 hidden lg:block"></div>
         @endif
-    </body>
+    </body> 
 </html>
