@@ -22,12 +22,7 @@ class UpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'landlord_id' => 'sometimes|uuid|exists:users,id',
-            'name' => 'sometimes|string|max:255',
-            'city' => 'sometimes|string|max:255',
-            'address' => 'sometimes|string|max:255',
-            'image_url' => 'nullable|string',
-            'description' => 'nullable|string',
+           
         ];
     }
 }

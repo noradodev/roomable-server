@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -16,13 +17,14 @@ class Room extends Model
         'floor_id',
         'room_number',
         'room_type',
+        'current_tenant_id',
         'price',
         'status',
     ];
 
-    public function tenants(): HasMany
+    public function tenant(): BelongsTo
     {
-        return $this->hasMany(Tenant::class);
+        return $this->belongsTo(Tenant::class);
     }
     public function activeTenant()
     {
@@ -46,6 +48,42 @@ class Room extends Model
 
         static::restoring(function ($room) {
             $room->tenants()->withTrashed()->restore();
+        });
+        static::updating(function ($room) {
+            $oldTenantId = $room->getOriginal('current_tenant_id');
+            $newTenantId = $room->current_tenant_id;
+
+            if ($room->status !== 'maintenance') {
+                if ($newTenantId && $newTenantId !== $oldTenantId) {
+                    $room->status = 'occupied';
+
+                    if ($tenant = \App\Models\Tenant::find($newTenantId)) {
+                        $tenant->update(['status' => 'active']);
+                    }
+
+                    if ($oldTenantId && $oldTenantId !== $newTenantId) {
+                        if ($oldTenant = \App\Models\Tenant::find($oldTenantId)) {
+                            $oldTenant->update(['status' => 'inactive']);
+                        }
+                    }
+                }
+
+                if (is_null($newTenantId) && $oldTenantId) {
+                    $room->status = 'available';
+
+                    if ($oldTenant = \App\Models\Tenant::find($oldTenantId)) {
+                        $oldTenant->update(['status' => 'inactive']);
+                    }
+                }
+            } else {
+                $room->current_tenant_id = null;
+
+                if ($oldTenantId) {
+                    if ($oldTenant = \App\Models\Tenant::find($oldTenantId)) {
+                        $oldTenant->update(['status' => 'inactive']);
+                    }
+                }
+            }
         });
     }
 }

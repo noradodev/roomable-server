@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('telegram_link_tokens', function (Blueprint $table) {
             $table->id();
             $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
-            $table->string('token')->unique();
+            $table->string('token', 64)->unique();
+              $table->timestamp('expires_at');
             $table->timestamps();
         });
     }

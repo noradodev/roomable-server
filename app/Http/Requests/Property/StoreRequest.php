@@ -22,19 +22,25 @@ class StoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'landlord_id' => 'uuid|exists:users,id',
-            'name' => 'required|string|max:255',
-            'city' => 'required|string|max:255',
-            'address' => 'required|string|max:255',
-            'image_url' => 'nullable|string',
-            'description' => 'nullable|string',
-            'floors' => 'required|array',
-            'floors.*.name' => 'required|string',
-            'floors.*.floor_number' => 'required|numeric',
-            'floors.*.rooms' => 'required|array',
-            'floors.*.rooms.*.room_number' => 'required|string',
-            'floors.*.rooms.*.room_type' => 'required|string',
-            'floors.*.rooms.*.price' => 'required|numeric|min:0',
+            'property' => 'required|array',
+            'property.name' => 'required|string|max:255',
+            'property.address' => 'required|string|max:255',
+            'property.city' => 'required|string|max:255',
+            'property.description' => 'nullable|string',
+            'property.image_url' => 'nullable|string',
+
+            'props_image' => 'nullable|file|image|max:5120', 
+
+            'roomSetup' => 'required|array',
+            'roomSetup.floors' => 'required|array|min:1',
+
+            'roomSetup.floors.*.name' => 'required|string|max:255',
+            'roomSetup.floors.*.number' => 'required|numeric',
+
+            'roomSetup.floors.*.rooms' => 'required|array|min:1',
+            'roomSetup.floors.*.rooms.*.roomNumber' => 'required|string|max:255',
+            'roomSetup.floors.*.rooms.*.type' => 'required|string|max:255',
+            'roomSetup.floors.*.rooms.*.price' => 'required|numeric|min:0',
         ];
     }
 }

@@ -8,4 +8,5 @@ interface RoomRepositoryInterface
     public function store(array $data);
     public function update(array $data, string $id);
     public function destroy(string $id);
+   public function assignRoom(string $roomId, string $tenantId, string $landlordId);
 }

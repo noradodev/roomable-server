@@ -11,8 +11,9 @@ class ApiResponser implements Responsable
     protected int $httpCode;
     protected mixed $data;
     protected string $errorMessage;
+    protected string $successMessage;
 
-    public function __construct(int $httpCode, mixed $data = [], string $errorMessage = '')
+    public function __construct(int $httpCode, mixed $data = [], string $errorMessage = '', string $successMessage = '')
     {
 
         if (! (($httpCode >= 200 && $httpCode <= 300) || ($httpCode >= 400 && $httpCode <= 600))) {
@@ -22,6 +23,7 @@ class ApiResponser implements Responsable
         $this->httpCode = $httpCode;
         $this->data = $data;
         $this->errorMessage = $errorMessage;
+        $this->successMessage = $successMessage;
     }
 
     public function toResponse($request): \Illuminate\Http\JsonResponse
@@ -34,12 +36,12 @@ class ApiResponser implements Responsable
         ];
 
         if ($success) {
+            $payload['message'] = $this->successMessage;
             $payload['data'] = $this->data;
+            
         } else {
             Log::info($this->errorMessage);
-            $payload['error'] = [
-                'message' => $this->errorMessage ?: 'Unknown error',
-            ];
+            $payload['message'] = $this->errorMessage ?: 'Unknown error';
         }
 
         return response()->json(
@@ -49,9 +51,9 @@ class ApiResponser implements Responsable
         );
     }
 
-    public static function ok(array $data)
+    public static function ok(array $data, string $successMessage = 'Data retrieve successfully')
     {
-        return new static(200, $data);
+        return new static(200, $data, successMessage: $successMessage);
     }
     public static function created(array $data)
     {

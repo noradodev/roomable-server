@@ -18,8 +18,12 @@ class Property extends Model
         'address',
         'city',
         'description',
+        'image_url'
     ];
-
+    public function rooms()
+    {
+        return $this->hasManyThrough(Room::class, Floor::class, 'property_id', 'floor_id');
+    }
     public function landlord(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -29,15 +33,14 @@ class Property extends Model
     {
         return $this->hasMany(Floor::class);
     }
-
-    public function rooms(): HasMany
-    {
-        return $this->hasMany(Room::class);
-    }
-
     public function getRouteKeyName(): string
     {
         return 'id';
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'landlord_id');
     }
     protected static function booted()
     {
@@ -53,4 +56,10 @@ class Property extends Model
             $property->floors()->withTrashed()->restore();
         });
     }
+     public function tenants(): HasMany
+    {
+        return $this->hasMany(Tenant::class);
+    }
+
+  
 }

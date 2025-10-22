@@ -25,9 +25,10 @@ class StoreRequest extends FormRequest
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:tenants,email',
             'phone' => 'nullable|string|max:50',
-            'room_id' => 'nullable|uuid|exists:rooms,id',
             'status' => 'nullable|in:active,inactive,unassigned,moved_out',
-            'move_in_date' => 'nullable|date',
+            'due_date' => 'required|date',
+            'rent_status' => 'nullable|in:on_time,due_soon,over_due',
+            'move_in_date' => 'required|date',
             'move_out_date' => 'nullable|date|after_or_equal:move_in_date',
             'notes' => 'nullable|string|max:500',
         ];

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('telegram_chat_id')->nullable();
             $table->string('telegram_username')->nullable();
             $table->text('address')->nullable();
+            $table->text('profile_image')->nullable();
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

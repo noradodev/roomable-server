@@ -56,4 +56,8 @@ class User extends Authenticatable implements OAuthenticatable
     {
         return $this->hasOne(UserProfile::class);
     }
+     public function tenants()
+    {
+        return $this->hasMany(Tenant::class);
+    }
 }

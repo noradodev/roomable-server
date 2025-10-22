@@ -17,11 +17,16 @@ return new class extends Migration
             $table->string('room_number');
             $table->string('room_type');
             $table->decimal('price', 10, 2);
+            $table->uuid('current_tenant_id')->nullable();
             $table->enum('status', ['available', 'occupied', 'maintenance'])->default('available');
             $table->timestamps();
             $table->softDeletes();
 
             $table->foreign('floor_id')->references('id')->on('floors')->onDelete('cascade');
+            $table->foreign('current_tenant_id')
+                ->references('id')
+                ->on('tenants')
+                ->onDelete('set null');
         });
     }
 

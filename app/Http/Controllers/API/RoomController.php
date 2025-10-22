@@ -8,8 +8,11 @@ use App\Http\Requests\Room\UpdateRequest;
 use App\Http\Responses\ApiResponser;
 use App\Interfaces\RoomRepositoryInterface;
 use App\Models\Room;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Request;
+use InvalidArgumentException;
 
 class RoomController extends Controller
 {
@@ -39,10 +42,12 @@ class RoomController extends Controller
     }
 
     public function update(UpdateRequest $request, Room $room)
-    {
+    {   
         try {
             $room = $this->roomRepo->update($request->validated(), $room->id);
             return response()->json($room);
+        } catch (\Exception $e) {
+            return ApiResponser::error($e->getMessage());
         } catch (\Throwable $e) {
             Log::error('Room update failed', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Failed to update room'], 500);
@@ -53,5 +58,32 @@ class RoomController extends Controller
     {
         $this->roomRepo->destroy($id);
         return ApiResponser::ok(['message' => 'Room deleted successfully']);
+    }
+
+    public function show($id)
+    {
+        try {
+            $room = Room::with(['floor.property.landlord'])
+                ->findOrFail($id);
+
+            if (Auth::id() !== $room->floor->property->landlord_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access to this room'
+                ], 403);
+            }
+
+            $room->price = (float) $room->price;
+
+            return response()->json([
+                'success' => true,
+                'data' => $room
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Room not found'
+            ], 404);
+        }
     }
 }

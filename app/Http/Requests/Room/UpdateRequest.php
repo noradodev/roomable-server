@@ -26,7 +26,8 @@ class UpdateRequest extends FormRequest
             'room_number' => 'sometimes|string|max:50',
             'room_type' => 'sometimes|string|max:100',
             'price' => 'sometimes|numeric|min:0',
-            'status' => 'sometimes|in:available,occupied,maintenance'
+            'c' => 'sometimes|in:available,occupied,maintenance',
+            'current_tenant_id' => 'nullable|uuid|exists:tenants,id'
         ];
     }
 }

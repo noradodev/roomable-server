@@ -26,7 +26,6 @@ class PropertyRepository implements PropertyRepositoryInterface
         if ($user->hasRole('landlord')) {
             $query->where('landlord_id', $user->id);
         }
-
         $property = $query->firstOrFail();
 
         return $property;
@@ -49,21 +48,31 @@ class PropertyRepository implements PropertyRepositoryInterface
     }
     public function forUser($user)
     {
+        $query = Property::withCount(['floors as floors_count'])
+            ->addSelect([
+                'total_rooms' => DB::table('rooms')
+                    ->join('floors', 'rooms.floor_id', '=', 'floors.id')
+                    ->whereColumn('floors.property_id', 'properties.id')
+                    ->selectRaw('COUNT(*)'),
+                'renting_rooms' => DB::table('rooms')
+                    ->join('floors', 'rooms.floor_id', '=', 'floors.id')
+                    ->whereColumn('floors.property_id', 'properties.id')
+                    ->whereNotNull('rooms.current_tenant_id')
+                    ->selectRaw('COUNT(*)'),
+                'remaining_rooms' => DB::table('rooms')
+                    ->join('floors', 'rooms.floor_id', '=', 'floors.id')
+                    ->whereColumn('floors.property_id', 'properties.id')
+                    ->whereNull('rooms.current_tenant_id')
+                    ->selectRaw('COUNT(*)')
+            ])->latest();
+
         if ($user->hasRole('admin')) {
-            return Property::latest()->get();
+            return $query->get();
         }
 
         if ($user->hasRole('landlord')) {
-            return Property::where('landlord_id', $user->id)
-                ->latest()
-                ->get();
+            return $query->where('landlord_id', $user->id)->get();
         }
-
-        // if ($user->hasRole('tenant')) {
-        //     return Property::whereHas('floors.rooms.tenants', function ($q) use ($user) {
-        //         $q->where('tenant_id', $user->id);
-        //     })->get();
-        // }
 
         return collect();
     }
@@ -72,27 +81,28 @@ class PropertyRepository implements PropertyRepositoryInterface
         return DB::transaction(function () use ($landlordId, $data) {
             $property = Property::create([
                 'landlord_id' => $landlordId,
-                'name' => $data['name'],
-                'address' => $data['address'],
-                'city' => $data['city'],
-                'image_url' => $data['image_url'] ?? null,
-                'description' => $data['description'] ?? null,
+                'name' => $data['property']['name'],
+                'address' => $data['property']['address'],
+                'city' => $data['property']['city'],
+                'image_url' => $data['property']['image_url'] ?? null,
+                'description' => $data['property']['description'] ?? null,
             ]);
 
-            if (!empty($data['floors'])) {
-                foreach ($data['floors'] as $floorData) {
+            if (!empty($data['roomSetup']['floors'])) {
+                foreach ($data['roomSetup']['floors'] as $floorData) {
                     $floor = $property->floors()->create([
                         'name' => $floorData['name'] ?? 'Unnamed Floor',
-                        'floor_number' => $floorData['floor_number'] ?? 0,
+                        'floor_number' => $floorData['number'] ?? 0,
                     ]);
 
+                    // Check if floor has rooms
                     if (!empty($floorData['rooms'])) {
                         foreach ($floorData['rooms'] as $roomData) {
                             $floor->rooms()->create([
-                                'room_number' => $roomData['room_number'],
-                                'room_type' => $roomData['room_type'],
+                                'room_number' => $roomData['roomNumber'],
+                                'room_type' => $roomData['type'],
                                 'price' => $roomData['price'] ?? 0,
-                                'status' => $roomData['status'] ?? 'available',
+                                'status' => 'available',
                             ]);
                         }
                     }

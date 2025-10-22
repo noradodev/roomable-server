@@ -8,6 +8,9 @@ use App\Http\Requests\Property\UpdateRequest;
 use App\Http\Responses\ApiResponser;
 use App\Interfaces\PropertyRepositoryInterface;
 use App\Models\Property;
+use App\Models\Tenant;
+use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +44,12 @@ class PropertyController extends Controller
         $data = $request->validated();
         $userId = Auth::id();
 
+        // Handle file upload
+        if ($request->hasFile('props_image')) {
+            $path = $request->file('props_image')->store('properties', 'public');
+            $data['property']['image_url'] = $path;
+        }
+
         try {
             $property = $this->propertyRepositoryInterface->createWithRelations($userId, $data);
             return ApiResponser::created([
@@ -55,26 +64,55 @@ class PropertyController extends Controller
             return ApiResponser::serverError('Failed to create property');
         }
     }
+
     /**
      * Display the specified resource.
      */
-       public function show(Property $property)
+    public function show($propertyId)
     {
         $user = Auth::user();
-        $floors = $this->propertyRepositoryInterface->show($user, $property->id);
+        $floors = $this->propertyRepositoryInterface->show($user, $propertyId);
 
-        return ApiResponser::ok(['floors' => $floors]);
+        return ApiResponser::ok(['property' => $floors]);
     }
+
+    public function listTenant()
+    {
+        $landlordId = Auth::id();
+
+        $tenants = Tenant::where('landlord_id', $landlordId)
+            ->select('id', 'name')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $tenants,
+        ]);
+    }
+
 
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateRequest $request, Property $property)
+    public function update(Request $request, Property $property)
     {
-        $data = $request->validated();
+        $data = $request->validate([
+            'landlord_id' => 'sometimes|uuid|exists:users,id',
+            'name' => 'sometimes|string|max:255',
+            'city' => 'sometimes|string|max:255',
+            'address' => 'sometimes|string|max:255',
+            'image_url' => 'nullable|string',
+            'description' => 'nullable|string',
+        ]);
+
+        if ($request->hasFile('props_image')) {
+            $path = $request->file('props_image')->store('properties', 'public');
+            $data['image_url'] = $path;
+        }
+
         try {
-         $this->propertyRepositoryInterface->update($data, $property->id);
+            $this->propertyRepositoryInterface->update($data, $property->id);
             return ApiResponser::ok([]);
         } catch (Throwable $ex) {
             Log::error('Failed to create property', [

@@ -10,10 +10,14 @@ class TelegramLinkToken extends Model
     protected $fillable = [
         'user_id',
         'token',
+        'expires_at'
     ];
 
     public function user(): BelongsTo
      {
         return $this->belongsTo(User::class);
     }
+        protected $casts = [
+        'expires_at' => 'datetime', 
+    ];
 }

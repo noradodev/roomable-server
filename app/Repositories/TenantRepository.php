@@ -14,37 +14,19 @@ class TenantRepository implements TenantRepositoryInterface
      */
     public function index($user, array $filters = [])
     {
-        $query = Tenant::with('room.floor.property');
+        $query = Tenant::with('currentRoom.floor.property');
 
         if ($user->hasRole('landlord')) {
             $query->where('landlord_id', $user->id);
         }
 
-        if (!empty($filters['search'])) {
-            $search = $filters['search'];
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
-            });
-        }
-
-        if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
-
-        if (!empty($filters['property_id'])) {
-            $query->whereHas('room.floor.property', function ($q) use ($filters) {
-                $q->where('id', $filters['property_id']);
-            });
-        }
-
-        if (!empty($filters['move_in_from']) && !empty($filters['move_in_to'])) {
-            $query->whereBetween('move_in_date', [
-                $filters['move_in_from'],
-                $filters['move_in_to'],
-            ]);
-        }
+        $query->search($filters['search'] ?? null)
+            ->status($filters['status'] ?? null)
+            ->byProperty($filters['property_id'] ?? null)
+            ->moveInDateRange(
+                $filters['move_in_from'] ?? null,
+                $filters['move_in_to'] ?? null
+            );
 
         $perPage = $filters['per_page'] ?? 10;
 
@@ -53,12 +35,7 @@ class TenantRepository implements TenantRepositoryInterface
 
     public function store(array $data)
     {
-        return DB::transaction(function () use ($data) {
-            $data['room_id'] = $data['room_id'] ?? null;
-            $data['status']  = $data['room_id']   ? Tenant::STATUS_ACTIVE : Tenant::STATUS_UNASSIGNED;
-
-            return Tenant::create($data);
-        });
+        return Tenant::create($data);
     }
 
     public function update(array $data, string $id)

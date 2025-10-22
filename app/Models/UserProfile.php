@@ -17,6 +17,7 @@ class UserProfile extends Model
         'telegram_id',
         'telegram_chat_id',
         'telegram_username',
+        'profile_image',
         'address'
     ];
 

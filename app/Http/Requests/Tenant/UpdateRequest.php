@@ -21,13 +21,14 @@ class UpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-         $tenantId = $this->route('tenant')?->id;
+        $tenantId = $this->route('tenant')?->id;
         return [
             'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:tenants,email,'. $tenantId,
+            'email' => 'sometimes|email|unique:tenants,email,' . $tenantId,
             'phone' => 'sometimes|string|max:50',
-            'room_id' => 'sometimes|uuid|exists:rooms,id',
             'status' => 'sometimes|in:active,inactive',
+            'due_date' => 'sometimes|date',
+            'rent_status' => 'nullable|in:on_time,due_soon,over_due',
             'move_in_date' => 'nullable|date',
             'move_out_date' => 'nullable|date|after_or_equal:move_in_date',
             'notes' => 'nullable|string|max:500',
